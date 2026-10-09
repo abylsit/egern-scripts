@@ -1,8 +1,8 @@
 // Experimental Egern YouTube /youtubei/v1/next filter.
 // Tested against one captured protobuf response. Fail-open on unknown layouts.
-(() => {
-  const original = $response.bodyBytes;
-  if (!original) return $done({});
+export default async function (ctx) {
+  const original = new Uint8Array(await ctx.response.arrayBuffer());
+  if (!original) return;
   const input = original instanceof Uint8Array ? original : new Uint8Array(original);
   const decoder = new TextDecoder();
   function varint(data, pos) {
@@ -78,12 +78,12 @@
     const output = transform(input, 0);
     if (removed < 1 || removed > 30) { // Fail open if no identifiable related sections or suspicious layout.
       console.log('Unexpected YouTube layout; leaving response unmodified. Related sections: ' + removed);
-      return $done({});
+      return;
     }
     console.log('Removed YouTube related sections: ' + removed);
-    return $done({bodyBytes:output});
+    return {body:output};
   } catch (e) {
     console.log('YouTube recommendation filtering error: ' + e);
-    return $done({});
+    return;
   }
-})();
+}
