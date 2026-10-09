@@ -57,17 +57,20 @@ export default async function (ctx) {
   }
   // The validated nesting for the captured iOS watch-page response:
   // root.7.51779735.1.49399797 contains repeated field-1 page sections.
-  const path = [7, 51779735, 1, 49399797];
+  const paths = [
+    {path:[7, 51779735, 1, 49399797], marker:'related-items'},
+    {path:[8, 49399797, 1, 50195462], marker:'related'}
+  ];
   let removed = 0;
-  function transform(data, depth) {
+  function transform(data, depth, path, marker) {
     const fields = readFields(data), result = [];
     for (const f of fields) {
       if (depth === path.length && f.num === 1 && f.wire === 2) {
         // Only skip complete recommendation sections identified by their exact marker.
-        if (decoder.decode(f.body).includes('related-items')) { removed++; continue; }
+        if (decoder.decode(f.body).includes(marker)) { removed++; continue; }
       }
       if (depth < path.length && f.num === path[depth] && f.wire === 2) {
-        const changed = transform(f.body, depth+1);
+        const changed = transform(f.body, depth+1, path, marker);
         result.push(changed === f.body ? f.raw : encodedField(f.num,changed));
       } else result.push(f.raw);
     }
@@ -75,8 +78,9 @@ export default async function (ctx) {
     return concat(result);
   }
   try {
-    const output = transform(input, 0);
-    if (removed < 1 || removed > 30) { // Fail open if no identifiable related sections or suspicious layout.
+    let output = input;
+    for (const layout of paths) output = transform(output, 0, layout.path, layout.marker);
+    if (removed < 1 || removed > 75) { // Fail open if no identifiable recommendation items or suspicious layout.
       console.log('Unexpected YouTube layout; leaving response unmodified. Related sections: ' + removed);
       return;
     }
