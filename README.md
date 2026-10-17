@@ -18,7 +18,64 @@ Keep the existing known-good Egern configuration, DIRECT routing, DNS, ad-blocki
 
 Set the iPhone Wi-Fi HTTP proxy **Off**. Enable Egern, reopen YouTube and open a fresh video. The previous Linux server and local diagnostic receiver are not needed.
 
-The existing ad-blocking, background-audio and PiP setup is not bundled or replaced here. Keep it configured; those features require their own checks after changing the setup.
+## Combined setup: ad blocking, background playback and one recommendation
+
+Use the configuration below as the base configuration, then enable the recommendation module linked above alongside it. Together they combine the previously working Maasea ad-blocking/background-playback script with this repository's recommendation filter. If the base configuration is already installed, keep it and add only the recommendation module; do not duplicate its rules or scripts.
+
+The Maasea script is pinned to the previously working revision. This setup deliberately uses only its response script; do not add `youtube.request.js` from a newer setup.
+
+```yaml
+dns:
+  bootstrap:
+    - system
+  upstreams:
+    NextDNS:
+      - https://dns.nextdns.io/YOUR_NEXTDNS_ID
+  forward:
+    - wildcard:
+        match: "*"
+        value: NextDNS
+
+rules:
+  - default:
+      policy: DIRECT
+
+url_rewrites:
+  - match: '^https?:\/\/[\w-]+\.googlevideo\.com\/(?!(dclk_video_ads|videoplayback\?)).+&oad'
+    location: http://reject-200/
+  - match: '^https?:\/\/(www|s)\.youtube\.com\/api\/stats\/ads'
+    location: http://reject-200/
+  - match: '^https?:\/\/(www|s)\.youtube\.com\/(pagead|ptracking)'
+    location: http://reject-200/
+  - match: '^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?adcontext'
+    location: http://reject-200/
+
+scriptings:
+  - http_response:
+      name: YouTube Response
+      match: '^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch)'
+      script_url: https://raw.githubusercontent.com/Maasea/sgmodule/65075cd/Script/Youtube/youtube.response.js
+      max_size: 10485760
+      timeout: 60
+      body_required: true
+      binary_body: true
+
+mitm:
+  ca_p12: egern.p12
+  ca_passphrase: egern
+  hostnames:
+    includes:
+      - "*.googlevideo.com"
+      - youtubei.googleapis.com
+      - www.youtube.com
+      - s.youtube.com
+```
+
+Replace `YOUR_NEXTDNS_ID` with your own NextDNS configuration ID, or retain your existing DNS settings. Keep your actual Egern certificate settings if they differ from this example, and ensure its CA is installed and trusted on the iPhone. NextDNS is configured inside Egern because the separate iOS DNS profile did not apply normally while Egern's VPN was active in the tested setup.
+
+The recommendation module supplies its own request/response hooks and MITM hostnames; it does not change DNS or DIRECT routing. Leave both the base Maasea response script and the recommendation module enabled. Disable older recommendation scripts, `/next` rejection and the local diagnostic module. Keep the Wi-Fi HTTP proxy Off.
+
+After installation, open a fresh video and check one recommendation, no community cards, the description, ad blocking, background audio and PiP. The base configuration previously provided ad blocking and background playback; those features were not separately revalidated by the final recommendation-filter diagnostic.
 
 ## Implementation
 
