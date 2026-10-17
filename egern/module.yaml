@@ -1,0 +1,22 @@
+name: YouTube One Recommendation
+description: One recommendation, no observed community cards; encrypted metadata processed locally.
+scriptings:
+  - http_request:
+      name: YouTube Watch Config Refresh
+      match: '^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/log_event(?:\?.*)?$'
+      script_url: https://raw.githubusercontent.com/abylsit/egern-scripts/main/egern/youtube_watch.js
+      timeout: 10
+      body_required: false
+  - http_response:
+      name: YouTube Watch Local Metadata
+      match: '^https:\/\/(?:youtubei\.googleapis\.com\/youtubei\/v1\/(?:log_event|config|next)|[\w.-]+\.googlevideo\.com\/initplayback)(?:\?.*)?$'
+      script_url: https://raw.githubusercontent.com/abylsit/egern-scripts/main/egern/youtube_watch.js
+      max_size: 10485760
+      timeout: 15
+      body_required: true
+      binary_body: true
+mitm:
+  hostnames:
+    includes:
+      - youtubei.googleapis.com
+      - '*.googlevideo.com'

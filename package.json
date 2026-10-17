@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild egern/src/youtube_watch.mjs --bundle --format=esm --platform=browser --target=es2020 --outfile=egern/youtube_watch.js"
+  },
+  "dependencies": {
+    "@noble/ciphers": "2.4.0",
+    "@noble/hashes": "2.4.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

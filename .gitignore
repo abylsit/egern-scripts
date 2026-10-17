@@ -1,0 +1,11 @@
+state/
+captures/
+__pycache__/
+*.pyc
+*.log
+*.bin
+*.mitm
+*.pem
+*.p12
+*.cer
+node_modules/
